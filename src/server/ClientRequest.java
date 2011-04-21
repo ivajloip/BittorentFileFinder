@@ -4,6 +4,6 @@ package server;
  * Currently unused
  * @author ivaylo
  */
-public enum Requests {
-	SEARCH, ADD, REQUESTSCAN, NOOPERATION;
+public enum ClientRequest {
+	SEARCH, CHECK, NOOPERATION;
 }

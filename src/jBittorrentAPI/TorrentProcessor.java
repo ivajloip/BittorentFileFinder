@@ -95,10 +95,15 @@ public class TorrentProcessor {
             this.torrent.announceURL = new String((byte[]) m.get("announce"));
         else
             return null;
-        if(this.torrent.announceURL.contains("tracker.thepiratebay.org/announce")){
-        	this.torrent.announceURL = "http://tracker.openbittorrent.com/announce";
+        if(this.torrent.announceURL.contains("tracker.thepiratebay.org/announce") || 
+        		this.torrent.announceURL.contains("http://tracker.publicbt.com:80/announce")) {
+//        	this.torrent.announceURL
+        	this.torrent.announceURL = "http://tracker.torrentbox.com:2710/announce";
         	//System.out.println("the pirate bay is a bit buggy, so probably we will have a problem...");
         }
+//        if(this.torrent.announceURL.contains("tracker.openbittorrent.com")) {
+//        	this.torrent.announceURL = "http://tracker.publicbt.com:80/announce";
+//        }
         if(m.containsKey("comment")) // optional key
             this.torrent.comment = new String((byte[]) m.get("comment"));
         if(m.containsKey("created by")) // optional key

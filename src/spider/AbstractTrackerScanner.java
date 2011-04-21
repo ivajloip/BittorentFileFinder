@@ -1,10 +1,18 @@
 package spider;
 
-import jBittorrentAPI.*;
-import java.io.*;
-import java.util.*;
+import jBittorrentAPI.TorrentFile;
+import jBittorrentAPI.TorrentProcessor;
 
-import server.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
+
+import server.ServerQuerry;
+import server.ServerRequest;
+import server.TorrentAddQuerry;
+import services.SigningService;
 import services.UrlService;
 import services.XmlService;
 
@@ -22,13 +30,40 @@ public abstract class AbstractTrackerScanner extends Thread{
 	protected int current;
 	private String tmpDir;
 	private boolean stopScan;
+	protected String certificatePassword;
+	protected String certificateFile;
+	
+	public AbstractTrackerScanner() {
+		init();
+	}
+	
+	public AbstractTrackerScanner(String host, int port, String certificateFile, String certificatePassword) {
+		init(host, port, certificateFile, certificatePassword);
+	}
+	
+	public static Object[] getConfiguration() {
+		ResourceBundle prop = ResourceBundle.getBundle("spider");
+		Object[] conf = new Object[4];
+		conf[0] = prop.getString("hostName");
+		conf[1] = Integer.valueOf(prop.getString("port"));
+		conf[2] = prop.getString("certificateFile");
+		conf[3] = prop.getString("certificatePassword");
+		return conf;
+	}
+	
+	public void init() {
+		Object[] conf = getConfiguration();
+		init((String) conf[0], (Integer) conf[1], (String) conf[2], (String) conf[3]);		
+	}
 	
 	/**
 	 * Initialize the connection to the server.
 	 * @param host The hostname to which the spider should connect.
 	 * @param port The port where the server should be listening.
 	 */
-	public void init(String host, int port){
+	public void init(String host, int port, String certificateFile, String certificatePassword) {
+		this.certificateFile = certificateFile;
+		this.certificatePassword = certificatePassword;
 		tp = new TorrentProcessor();
 		connectToServer(host, port);
 		setTmpDir();
@@ -45,6 +80,13 @@ public abstract class AbstractTrackerScanner extends Thread{
 	public void handleTorrent(String name, String torrent){
 		torrentsCache[current++] = torrent;
 		if(current == torrentsCache.length)flushCache();
+		
+		// wait for some time so that it won't seem as DOS attack
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -52,14 +94,15 @@ public abstract class AbstractTrackerScanner extends Thread{
 	 */
 	@SuppressWarnings("unchecked")
 	protected synchronized void flushCache(){
-		xml.writeObject(new Querry(ServerRequest.CHECKTORRENTS,torrentsCache));
+		xml.writeObject(new ServerQuerry(ServerRequest.CHECKTORRENTS,torrentsCache));
 		List<String> needs = (List<String>) xml.readObject();
 		List<String> files;
 		for(String torrent : needs){
 			files = getFilesInTorrent(torrent);
 			if(files != null){
 				System.out.println("Adding " + files.size() + " files in torrent "+ torrent );
-				xml.writeObject(new Querry(ServerRequest.ADDTORRENTS, new TorrentAddQuerry(torrent, files)));
+				System.out.flush();
+				xml.writeObject(new ServerQuerry(ServerRequest.ADDTORRENTS, new TorrentAddQuerry(torrent, files)));
 			}
 		}
 		current = 0;
@@ -74,13 +117,20 @@ public abstract class AbstractTrackerScanner extends Thread{
 	public List<String> getFilesInTorrent(String link){
 		List<String> files = new ArrayList<String>();
 		
-		if(!UrlService.copyFile(link, tmpDir + "/__tmp123" + ".torrent"))return null;
+		if(!UrlService.copyFile(link, tmpDir + "/__tmp123" + ".torrent")) {
+			return null;
+		}
+		
 		TorrentFile t = tp.getTorrentFile(tp.parseTorrent(tmpDir + "/__tmp123" + ".torrent"));
 		
 		if(t == null || stopScan){
 			System.out.println("Error while parsing torrent file" + link);
-			if(stopScan)interrupt();
-			else stopScan = true;
+			if(stopScan) {
+				interrupt();
+			}
+			else {
+				stopScan = true;
+			}
 			return null;
 		}
 		
@@ -92,14 +142,21 @@ public abstract class AbstractTrackerScanner extends Thread{
 		File f = new File(tmpDir + "/__tmp123"+".torrent");
 		f.delete();
 		
-		// clears some data in the TorrentProcessor
+		clear(t);
+		
+		return files;
+	}
+
+	/**
+	 * @param t The TorrentFile to be cleared
+	 */
+	private void clear(TorrentFile t) {
+		// clears some data in the TorrentFile
 		t.length.clear();
 		t.name.clear();
 		t.piece_hash_values_as_binary.clear();
 		t.piece_hash_values_as_hex.clear();
 		t.piece_hash_values_as_url.clear();
-		
-		return files;
 	}
 	
 	/**
@@ -114,6 +171,14 @@ public abstract class AbstractTrackerScanner extends Thread{
 			//Socket s = new Socket (host, port);
 			xml = XmlService.createXMLHandler(host, port);
 			xml.writeObject(new Integer(1));
+			String text = (String) xml.readObject();
+			SigningService xmlService = SigningService.createSigningService(certificateFile, certificatePassword);
+			
+			// For security reasons we delete this information immediately after we have used it
+			certificateFile = certificatePassword = null;
+			
+			String signedXML = xmlService.sign("<signed_text>" + text + "</signed_text>");
+			xml.writeObject(signedXML);
 		}
 		catch (Exception e) {
 			xml = null;

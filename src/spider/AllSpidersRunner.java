@@ -1,20 +1,23 @@
 package spider;
 
-import java.util.ResourceBundle;
 
 /**
  * Takes care that the spiders won't die and stay this way for a long time. 
  * @author ivaylo
  *
  */
-public class Spider extends Thread{
+public class AllSpidersRunner extends Thread{
 	private AbstractTrackerScanner[] threads;
 	private String host;
 	private int port;
+	private String cerfiticateFile;
+	private String certificatePassword;
 	
-	public Spider(String host, int port){
+	public AllSpidersRunner(String host, int port, String certificateFile, String certificatePassword){
 		this.host = host;
 		this.port = port;
+		this.cerfiticateFile = certificateFile;
+		this.certificatePassword = certificatePassword;
 	}
 	
 	/**
@@ -22,20 +25,16 @@ public class Spider extends Thread{
 	 */
 	@Override
 	public void run(){
-		
-//		String host = "localhost";
-//		int port = 6543; 
-		
 		while(true){
 			if(interrupted()){
 				return;
 			}
 			
 			threads = new AbstractTrackerScanner[]{
-					//new ThePirateBayScanner(host, port),
-					new BtJunkieScanner(host, port),
-					//new TorrentBitScanner(host, port)
-					};
+					new ThePirateBayScanner(host, port, cerfiticateFile, certificatePassword), 
+//					new BtJunkieScanner(host, port, cerfiticateFile, certificatePassword),
+//					new TorrentBitScanner(host, port, cerfiticateFile, certificatePassword)
+			};
 			
 			for(Thread t : threads){
 				t.start();
@@ -43,7 +42,6 @@ public class Spider extends Thread{
 			System.out.println("Threads started successfully");
 			try {
 				Thread.sleep(21600000);
-				//Thread.sleep(10000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -67,8 +65,8 @@ public class Spider extends Thread{
 	}
 	
 	public static void main(String[] args){
-		ResourceBundle prop = ResourceBundle.getBundle("spider");
-		Thread curr = new Spider(prop.getString("hostName"), Integer.parseInt(prop.getString("port")));
+		Object[] conf = AbstractTrackerScanner.getConfiguration();
+		Thread curr = new AllSpidersRunner((String) conf[0], (Integer) conf[1], (String) conf[2], (String) conf[3]);
 		curr.run();
 	}
 }

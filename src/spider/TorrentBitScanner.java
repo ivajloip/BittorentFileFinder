@@ -1,7 +1,6 @@
 package spider;
 
 import java.io.IOException;
-import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,8 +12,12 @@ import services.UrlService;
  *
  */
 public class TorrentBitScanner extends AbstractTrackerScanner{
-	public TorrentBitScanner(String host, int port) {
-		init(host, port);
+	public TorrentBitScanner() {
+		super();
+	}
+	
+	public TorrentBitScanner(String host, int port, String certificateFile, String certificatePassword){
+		super(host, port, certificateFile, certificatePassword);
 	}
 	
 	/**
@@ -43,14 +46,16 @@ public class TorrentBitScanner extends AbstractTrackerScanner{
 				Pattern p = Pattern.compile("<td class=\"title\"><a href=\"/torrent/(\\d*).*?\" title=\".*?\">(.*?)</a></td>");
 				Matcher m = p.matcher(result);
 				while(m.find()){
-					if(isInterrupted())return;
+					if(isInterrupted()){
+						System.out.println("closing");
+						xml.close(); 
+						return;
+					}
 					handleTorrent(m.group(2), "http://www.torrentbit.net/get/" + m.group(1));
 					flag = true;
-					//break;
 				}
-				//flag = false;
-	
-				System.out.println("\n\n----" + page + "-------\n");
+
+				System.out.println("\nTorrentBit scanner:\n----" + page + "-------\n");
 				page++;
 			}
 		}
@@ -58,9 +63,7 @@ public class TorrentBitScanner extends AbstractTrackerScanner{
 	}
 	
 	public static void main(String[] args) throws IOException {
-		ResourceBundle prop = ResourceBundle.getBundle("spider");
-		TorrentBitScanner s = new TorrentBitScanner(
-				prop.getString("hostName"), Integer.parseInt(prop.getString("port")));
+		TorrentBitScanner s = new TorrentBitScanner();
 		s.scan();
 	}
 }

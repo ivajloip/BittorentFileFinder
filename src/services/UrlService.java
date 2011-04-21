@@ -25,21 +25,18 @@ public class UrlService{
 		try {
 			url = new URL(address);
 			in = new BufferedReader(new InputStreamReader(url.openStream()));
-			//System.out.print("buffer opened "+ address + " ");
 			String tmp;
 			while((tmp = in.readLine()) != null){
 				result = result + tmp + "\n";
-				//System.out.println(tmp);
 			}
-			//System.out.println("out");
 		} catch (Exception e) {
-			//e.printStackTrace();
 			System.out.println("Error getting " + address);
 		}
 		finally{
-			//System.out.println("closing");
 			try{
-				if(in != null)in.close();
+				if(in != null) {
+					in.close();
+				}
 			}
 			catch(Exception ex){
 				ex.printStackTrace();
@@ -74,7 +71,6 @@ public class UrlService{
 				}
 			}
 			catch(IOException ex){
-				//ex.printStackTrace();
 				tryAgain = true;
 				attempts--;
 				System.out.println(address + " attempts left " + attempts);

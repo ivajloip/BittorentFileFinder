@@ -12,9 +12,14 @@ import services.UrlService;
  *
  */
 public class BtJunkieScanner extends AbstractTrackerScanner{
-	public BtJunkieScanner(String host, int port){
-		init(host, port);
+	public BtJunkieScanner() {
+		super();
 	}
+	
+	public BtJunkieScanner(String host, int port, String certificateFile, String certificatePassword){
+		super(host, port, certificateFile, certificatePassword);
+	}
+	
 	
 	/**
 	 * Starts to go through the pages in the tracker and to add torrents from each of them.
@@ -54,12 +59,17 @@ public class BtJunkieScanner extends AbstractTrackerScanner{
 						flag = true;
 					}
 					
-					System.out.println("\n----" + page + "-------");
+					System.out.println("\nBtjunkie Scanner:\n----" + page + "-------\n");
 					page++;
 				}
 				System.out.println("\n\n\nfinished " + genres[i] + "\n\n");
 		}
 		flushCache();
 		xml.close();
+	}
+	
+	public static void main(String[] args) throws IOException {
+		BtJunkieScanner s = new BtJunkieScanner();
+		s.scan();
 	}
 }

@@ -5,7 +5,7 @@ package server;
  * It is immutable by design. 
  * @author ivaylo
  */
-public final class Querry {
+public final class ServerQuerry {
 	private final ServerRequest r;
 	private final Object data;
 	
@@ -14,7 +14,7 @@ public final class Querry {
 	 * @param r The request to be send to the server.
 	 * @param data The information that should be provided.
 	 */
-	public Querry(ServerRequest r, Object data){
+	public ServerQuerry(ServerRequest r, Object data){
 		this.r = r;
 		this.data = data;
 	}

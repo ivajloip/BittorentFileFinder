@@ -1,8 +1,8 @@
 package spider;
 
 import java.io.IOException;
-import java.util.ResourceBundle;
-import java.util.regex.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import services.UrlService;
 
@@ -12,8 +12,12 @@ import services.UrlService;
  *
  */
 public class ThePirateBayScanner extends AbstractTrackerScanner{
-	public ThePirateBayScanner(String host, int port){
-		init(host, port);
+	public ThePirateBayScanner() {
+		super();
+	}
+	
+	public ThePirateBayScanner(String host, int port, String certificateFile, String certificatePassword){
+		super(host, port, certificateFile, certificatePassword);
 	}
 	
 	/**
@@ -24,7 +28,7 @@ public class ThePirateBayScanner extends AbstractTrackerScanner{
 		boolean flag;
 		int page;
 		int orderBy;
-		int genres[] = new int[]{600, 400, 100, 101, 102, 103, 104, 200, 300};
+		int genres[] = new int[]{100, 101, 102, 103, 104, 200, 300, 400, 600};
 		System.out.println("ThePirateBayScanner starts to work");
 		for(int i=0;i<genres.length;i++){
 			for(orderBy = 1; orderBy < 15; orderBy++){
@@ -33,13 +37,9 @@ public class ThePirateBayScanner extends AbstractTrackerScanner{
 				flag = true;
 				while(flag){
 					flag = false;
-					//System.out.println("next");
-					// za janrovete 100 moje da se zamesti s 200, 300, 400, 600
 					String result = UrlService.readURL("http://thepiratebay.org/browse/"+genres[i] + "/" + page + "/" + orderBy);
-					//System.out.println("read");
 					Pattern p = Pattern.compile("title=\"Details for (.*?)\".*?</a></div>\\s*<a href=\"(.*?)\" title=\"Download this torrent\">");
 					Matcher m = p.matcher(result);
-					//System.out.println("staring");
 					while(m.find()){
 						//System.out.println(m.group(2));
 						if(isInterrupted()){
@@ -51,7 +51,7 @@ public class ThePirateBayScanner extends AbstractTrackerScanner{
 						flag = true;
 					}
 					
-					System.out.println("\n----" + page + "-------");
+					System.out.println("\nThe piratebay scanner:\n----" + page + "-------\n");
 					page++;
 				}
 				System.out.println("\n\n\nfinished " + genres[i] + " " + orderBy + "\n\n");
@@ -62,10 +62,7 @@ public class ThePirateBayScanner extends AbstractTrackerScanner{
 	}
 	
 	public static void main(String[] args) throws IOException {
-		ResourceBundle prop = ResourceBundle.getBundle("spider");
-		
-		ThePirateBayScanner s = new ThePirateBayScanner(
-				prop.getString("hostName"), Integer.parseInt(prop.getString("port")));
+		ThePirateBayScanner s = new ThePirateBayScanner();
 		s.scan();
 	}
 }

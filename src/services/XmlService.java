@@ -13,7 +13,7 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
 
 /**
  * Handles the communication between server, clients and spiders. 
- * @author ivaylo
+ * @author marii
  *
  */
 public class XmlService {
@@ -149,4 +149,17 @@ public class XmlService {
 		
 		return new XmlService(in, out);
 	}
+	
+	
+//	
+//	public static void main(String[] args) throws IOException {
+//		SigningServiceImpl xmlService = new SigningServiceImpl("/media/data/workspace/Java/Project/mycert.pfx", "qwerty");
+//        System.out.println(xmlService.sign("<bean>abc</bean>"));
+//        Scanner sc = new Scanner(new File("/home/ivaylo/Desktop/test.xml"));
+//        String file = "";
+//        while(sc.hasNextLine()) {
+//        	file += sc.nextLine();
+//        }
+//        System.out.println(xmlService.validate(file));
+//	}
 }

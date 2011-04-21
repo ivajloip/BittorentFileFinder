@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -21,8 +22,11 @@ import javax.swing.JTextField;
 import javax.swing.border.SoftBevelBorder;
 
 import server.Pair;
+import server.ServerQuerry;
+import server.ServerRequest;
 import services.UrlService;
 import services.XmlService;
+import utility.Utilities;
 
 class Elem {
 
@@ -59,15 +63,23 @@ public class SearchPanel extends JPanel {
 	protected JLabel found;
 	private XmlService db;
 	private DownloadPanel downPanel;
+	private boolean checkSeed;
 	
 	
 	@SuppressWarnings("unchecked")
 	public void query(String s) {
 //		System.out.println(s);
-		db.writeObject(s);
+		ServerQuerry querry;
+		if ( s.length() < 2 ) return;
+		if ( s.length() > 5 && s.substring(0, 5).equals("id://") )
+			querry = new ServerQuerry(ServerRequest.SEARCHBYID, s.substring(5));
+		else querry = new ServerQuerry(ServerRequest.SEARCH, s);
+		db.writeObject(querry);
 		List<Pair<String>> results = (List<Pair<String>>) db.readObject();
 		int sz;
-		if( results == null ) sz = 0;
+		//if ( results != null )
+		//	System.out.println( results.size() );
+		if( results == null ) sz = 0;		
 		else sz = results.size();
 		found.setText( "found " + sz + " items" );
 		found.setVisible(true);
@@ -93,13 +105,13 @@ public class SearchPanel extends JPanel {
 		jf.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
 		if ( jf.showOpenDialog(this) == JFileChooser.APPROVE_OPTION ) {
 			directory = jf.getSelectedFile();
-			System.out.println(directory.getAbsolutePath());
+			//System.out.println(directory.getAbsolutePath());
 			String tmpDir = System.getProperty("java.io.tmpdir");
 			if(!UrlService.copyFile(e.getLink(), tmpDir + "/__" + e.getName() + ".torrent"))
 				System.out.println("neshto se omaza s tegleneto na torenta");
 			//System.out.println("name " + file + " torrent" + torrent);
-			System.out.println("name " + e.getName());
-			System.out.println(e.getLink());
+			//System.out.println("name " + e.getName());
+			//System.out.println(e.getLink());
 			downPanel.addTorrent(new TorrentTask(tmpDir + "/__" + e.getName() + ".torrent", directory.getAbsolutePath() + "/", e.getName(), e));
 			//TorrentDownloader td = new TorrentDownloader(tmpDir + "/__tmp123.torrent", directory.getAbsolutePath() + "/", e.getName());
 			//td.start();
@@ -116,6 +128,7 @@ public class SearchPanel extends JPanel {
 		ResourceBundle prop = ResourceBundle.getBundle("client");
 		
 		db = XmlService.createXMLHandler(prop.getString("server_host"), Integer.parseInt(prop.getString("server_port")));
+		checkSeed = Boolean.valueOf(prop.getString("check_seed"));
 		db.writeObject(new Integer(0));
 		
 		found = new JLabel();
@@ -154,9 +167,22 @@ public class SearchPanel extends JPanel {
 					requestDownload((Elem) x);
 			}
 		});
+		
+		JButton getId = new JButton("get id");
+		getId.addActionListener(new ActionListener() {			
+			public void actionPerformed(ActionEvent e) {				
+				Object[] t = jt.getSelectedValues();
+				if ( t.length != 1 ) return;
+				ServerQuerry querry = new ServerQuerry(ServerRequest.GETID, ((Elem) t[0]).getName());
+				db.writeObject(querry);
+				String data = (String) db.readObject();				
+				area.setText("id://" + data);
+			}
+		});
 
 		innerUpper.add(search);
 		innerUpper.add(down);
+		innerUpper.add(getId);
 		jp0.add(BorderLayout.NORTH, innerUpper);
 
 		JPanel innerLower = new JPanel();
@@ -193,13 +219,16 @@ public class SearchPanel extends JPanel {
 						
 
 						public void run() {
-							// TODO Auto-generated method stub
 							query(area.getText());
 						}
 					}).start();
 			}
 		});
 
+	}
+	
+	public void closeConnections() {
+		db.close();
 	}
 
 }
